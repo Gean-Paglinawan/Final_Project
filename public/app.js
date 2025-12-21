@@ -137,9 +137,31 @@ async function deleteNote(id) {
 // Fetch API - Toggle completion
 async function toggleCompletion(id, completed) {
     try {
-        await updateNote(id, { completed });
+        const response = await fetch(`${API_BASE_URL}/notes/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ completed })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || errorData.details || 'Failed to update note');
+        }
+        
+        const updatedNote = await response.json();
+        const index = notes.findIndex(n => n.id === id);
+        if (index !== -1) {
+            notes[index] = updatedNote;
+        }
+        
+        renderNotes();
+        const statusText = completed ? 'marked as completed' : 'marked as incomplete';
+        showNotification(`Note ${statusText}!`, 'success');
     } catch (error) {
         console.error('Error toggling completion:', error);
+        showNotification(`Failed to update note: ${error.message}`, 'error');
     }
 }
 
@@ -187,7 +209,7 @@ function createNoteCard(note) {
             ${note.updatedAt !== note.createdAt ? ` | Updated: ${formatDateTime(note.updatedAt)}` : ''}
         </div>
         <div class="note-actions">
-            <button class="btn ${note.completed ? 'btn-success' : 'btn-success'}" 
+            <button class="btn ${note.completed ? 'btn-completed' : 'btn-complete'}" 
                     onclick="toggleCompletion('${note.id}', ${!note.completed})">
                 ${note.completed ? '✓ Completed' : 'Mark Complete'}
             </button>
