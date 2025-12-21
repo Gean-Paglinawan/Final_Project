@@ -18,14 +18,21 @@ const reminderDateGroup = document.getElementById('reminderDateGroup');
 let notes = [];
 let currentFilter = 'all';
 let editingNoteId = null;
+let shownReminders = new Set(); // Track which reminders have been shown
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadNotes();
     setupEventListeners();
+    
+    // Request notification permission on load
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+    
+    // Check reminders immediately and then every 30 seconds
     checkReminders();
-    // Check reminders every minute
-    setInterval(checkReminders, 60000);
+    setInterval(checkReminders, 30000);
 });
 
 // Event Listeners
@@ -136,27 +143,48 @@ async function deleteNote(id) {
 
 // Fetch API - Toggle completion
 async function toggleCompletion(id, completed) {
+    if (!id) {
+        console.error('No note ID provided for toggle completion');
+        showNotification('Error: No note ID provided', 'error');
+        return;
+    }
+    
     try {
+        console.log(`Toggling completion for note ${id} to ${completed}`);
+        
         const response = await fetch(`${API_BASE_URL}/notes/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ completed })
+            body: JSON.stringify({ completed: completed })
         });
         
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || errorData.details || 'Failed to update note');
+            const errorMsg = errorData.error || errorData.details || `HTTP ${response.status}: Failed to update note`;
+            console.error('API error:', errorMsg);
+            throw new Error(errorMsg);
         }
         
         const updatedNote = await response.json();
+        console.log('Note updated successfully:', updatedNote);
+        
+        // Update local notes array
         const index = notes.findIndex(n => n.id === id);
         if (index !== -1) {
             notes[index] = updatedNote;
+        } else {
+            // If note not found locally, reload all notes
+            console.warn('Note not found in local array, reloading notes');
+            await loadNotes();
+            return;
         }
         
+        // Re-render to show updated state
         renderNotes();
+        
+        // Show success notification
         const statusText = completed ? 'marked as completed' : 'marked as incomplete';
         showNotification(`Note ${statusText}!`, 'success');
     } catch (error) {
@@ -190,6 +218,7 @@ function renderNotes() {
 function createNoteCard(note) {
     const card = document.createElement('div');
     card.className = `note-card ${note.completed ? 'completed' : ''}`;
+    card.dataset.noteId = note.id;
     
     const reminderInfo = note.isReminder && note.reminderDate
         ? `<div class="note-reminder">⏰ Reminder: ${formatDateTime(note.reminderDate)}</div>`
@@ -209,14 +238,32 @@ function createNoteCard(note) {
             ${note.updatedAt !== note.createdAt ? ` | Updated: ${formatDateTime(note.updatedAt)}` : ''}
         </div>
         <div class="note-actions">
-            <button class="btn ${note.completed ? 'btn-completed' : 'btn-complete'}" 
-                    onclick="toggleCompletion('${note.id}', ${!note.completed})">
+            <button class="btn btn-toggle-complete ${note.completed ? 'btn-completed' : 'btn-complete'}" 
+                    data-note-id="${note.id}" data-completed="${note.completed}">
                 ${note.completed ? '✓ Completed' : 'Mark Complete'}
             </button>
-            <button class="btn btn-edit" onclick="editNote('${note.id}')">Edit</button>
-            <button class="btn btn-danger" onclick="confirmDelete('${note.id}')">Delete</button>
+            <button class="btn btn-edit" data-note-id="${note.id}">Edit</button>
+            <button class="btn btn-danger" data-note-id="${note.id}">Delete</button>
         </div>
     `;
+    
+    // Add event listeners
+    const toggleBtn = card.querySelector('.btn-toggle-complete');
+    toggleBtn.addEventListener('click', () => {
+        const noteId = toggleBtn.dataset.noteId;
+        const currentCompleted = toggleBtn.dataset.completed === 'true';
+        toggleCompletion(noteId, !currentCompleted);
+    });
+    
+    const editBtn = card.querySelector('.btn-edit');
+    editBtn.addEventListener('click', () => {
+        editNote(editBtn.dataset.noteId);
+    });
+    
+    const deleteBtn = card.querySelector('.btn-danger');
+    deleteBtn.addEventListener('click', () => {
+        confirmDelete(deleteBtn.dataset.noteId);
+    });
     
     return card;
 }
@@ -293,10 +340,7 @@ function confirmDelete(id) {
     }
 }
 
-// Toggle completion (global function for onclick)
-window.toggleCompletion = async function(id, completed) {
-    await toggleCompletion(id, completed);
-};
+// Toggle completion function (no longer needs window wrapper)
 
 // Check reminders and show notifications
 function checkReminders() {
@@ -306,10 +350,15 @@ function checkReminders() {
         if (note.isReminder && note.reminderDate && !note.completed) {
             const reminderTime = new Date(note.reminderDate);
             const timeDiff = reminderTime - now;
+            const reminderKey = `${note.id}-${note.reminderDate}`;
             
-            // Show notification if reminder is within the next minute
-            if (timeDiff > 0 && timeDiff <= 60000) {
+            // Show notification if:
+            // 1. Reminder time has passed (timeDiff <= 0) OR
+            // 2. Reminder is within the next 5 minutes (0 < timeDiff <= 300000)
+            // 3. And hasn't been shown yet
+            if (timeDiff <= 300000 && !shownReminders.has(reminderKey)) {
                 showReminderNotification(note);
+                shownReminders.add(reminderKey);
             }
         }
     });
@@ -317,27 +366,52 @@ function checkReminders() {
 
 // Show reminder notification
 function showReminderNotification(note) {
-    // Browser notification (requires permission)
-    if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(`Reminder: ${note.title}`, {
-            body: note.content,
-            icon: '📚',
-            tag: note.id
-        });
-    } else if ('Notification' in window && Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-                new Notification(`Reminder: ${note.title}`, {
-                    body: note.content,
-                    icon: '📚',
-                    tag: note.id
-                });
-            }
-        });
+    const reminderTime = new Date(note.reminderDate);
+    const now = new Date();
+    const timeDiff = reminderTime - now;
+    
+    let timeText = '';
+    if (timeDiff < 0) {
+        const minutesAgo = Math.floor(Math.abs(timeDiff) / 60000);
+        timeText = `${minutesAgo} minute${minutesAgo !== 1 ? 's' : ''} ago`;
+    } else {
+        const minutesLeft = Math.floor(timeDiff / 60000);
+        timeText = `in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}`;
     }
     
-    // Fallback: Show in-page notification
-    showNotification(`⏰ Reminder: ${note.title}`, 'reminder');
+    // Always show in-page notification first
+    showNotification(`⏰ Reminder: ${note.title} (${timeText})`, 'reminder');
+    
+    // Browser notification (requires permission)
+    if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+            try {
+                new Notification(`Reminder: ${note.title}`, {
+                    body: note.content.substring(0, 100) + (note.content.length > 100 ? '...' : ''),
+                    icon: '📚',
+                    tag: note.id,
+                    requireInteraction: false
+                });
+            } catch (error) {
+                console.error('Error showing browser notification:', error);
+            }
+        } else if (Notification.permission !== 'denied') {
+            // Request permission if not yet asked
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    try {
+                        new Notification(`Reminder: ${note.title}`, {
+                            body: note.content.substring(0, 100) + (note.content.length > 100 ? '...' : ''),
+                            icon: '📚',
+                            tag: note.id
+                        });
+                    } catch (error) {
+                        console.error('Error showing browser notification:', error);
+                    }
+                }
+            });
+        }
+    }
 }
 
 // Utility functions
