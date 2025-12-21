@@ -33,9 +33,45 @@ async function ensureDataDir() {
 async function readNotes() {
   try {
     const data = await fs.readFile(DATA_FILE, 'utf8');
-    return JSON.parse(data);
+    
+    // Handle empty file
+    if (!data.trim()) {
+      console.warn('Notes file is empty, initializing with empty array');
+      await writeNotes([]);
+      return [];
+    }
+    
+    const parsed = JSON.parse(data);
+    
+    // Validate that parsed data is an array
+    if (!Array.isArray(parsed)) {
+      console.error('Notes file does not contain an array, resetting');
+      await writeNotes([]);
+      return [];
+    }
+    
+    return parsed;
   } catch (error) {
-    console.error('Error reading notes:', error);
+    console.error('Error reading notes (corrupted file detected):', error.message);
+    
+    // Backup corrupted file
+    try {
+      const backupFile = `${DATA_FILE}.corrupted.${Date.now()}`;
+      const corruptedData = await fs.readFile(DATA_FILE, 'utf8');
+      await fs.writeFile(backupFile, corruptedData);
+      console.log(`Corrupted file backed up to: ${backupFile}`);
+    } catch (backupError) {
+      console.error('Could not backup corrupted file:', backupError.message);
+    }
+    
+    // Reset to empty array
+    try {
+      await writeNotes([]);
+      console.log('Notes file reset to empty array');
+    } catch (resetError) {
+      console.error('Could not reset notes file:', resetError.message);
+    }
+    
     return [];
   }
 }
@@ -43,11 +79,31 @@ async function readNotes() {
 // Write notes to file
 async function writeNotes(notes) {
   try {
-    await fs.writeFile(DATA_FILE, JSON.stringify(notes, null, 2));
+    // Validate that notes is an array
+    if (!Array.isArray(notes)) {
+      throw new Error('Notes must be an array');
+    }
+    
+    // Write to a temporary file first, then rename (atomic write)
+    const tempFile = `${DATA_FILE}.tmp`;
+    const jsonData = JSON.stringify(notes, null, 2);
+    
+    await fs.writeFile(tempFile, jsonData, 'utf8');
+    await fs.rename(tempFile, DATA_FILE);
+    
     return true;
   } catch (error) {
     console.error('Error writing notes:', error);
     console.error('Error details:', error.message, error.stack);
+    
+    // Clean up temp file if it exists
+    try {
+      const tempFile = `${DATA_FILE}.tmp`;
+      await fs.unlink(tempFile).catch(() => {}); // Ignore errors if file doesn't exist
+    } catch (cleanupError) {
+      // Ignore cleanup errors
+    }
+    
     return false;
   }
 }
@@ -101,7 +157,10 @@ app.post('/api/notes', async (req, res) => {
     };
 
     notes.push(newNote);
-    await writeNotes(notes);
+    const writeSuccess = await writeNotes(notes);
+    if (!writeSuccess) {
+      return res.status(500).json({ error: 'Failed to save note' });
+    }
     res.status(201).json(newNote);
   } catch (error) {
     console.error('Error creating note:', error);
@@ -132,10 +191,14 @@ app.put('/api/notes/:id', async (req, res) => {
       updatedAt: new Date().toISOString()
     };
 
-    await writeNotes(notes);
+    const writeSuccess = await writeNotes(notes);
+    if (!writeSuccess) {
+      return res.status(500).json({ error: 'Failed to save note after update' });
+    }
     res.json(notes[index]);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update note' });
+    console.error('Error updating note:', error);
+    res.status(500).json({ error: 'Failed to update note', details: error.message });
   }
 });
 
@@ -149,10 +212,29 @@ app.delete('/api/notes/:id', async (req, res) => {
       return res.status(404).json({ error: 'Note not found' });
     }
 
-    await writeNotes(filteredNotes);
+    const writeSuccess = await writeNotes(filteredNotes);
+    if (!writeSuccess) {
+      return res.status(500).json({ error: 'Failed to save notes after deletion' });
+    }
+    
     res.json({ message: 'Note deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete note' });
+    console.error('Error deleting note:', error);
+    res.status(500).json({ error: 'Failed to delete note', details: error.message });
+  }
+});
+
+// POST reset data (for emergency recovery)
+app.post('/api/reset', async (req, res) => {
+  try {
+    const writeSuccess = await writeNotes([]);
+    if (!writeSuccess) {
+      return res.status(500).json({ error: 'Failed to reset data' });
+    }
+    res.json({ message: 'Data reset successfully' });
+  } catch (error) {
+    console.error('Error resetting data:', error);
+    res.status(500).json({ error: 'Failed to reset data', details: error.message });
   }
 });
 
