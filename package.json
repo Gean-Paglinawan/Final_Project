@@ -1,0 +1,17 @@
+{
+  "name": "student-notes-reminders",
+  "version": "1.0.0",
+  "description": "A simple CRUD app for students to manage notes and reminders",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["notes", "reminders", "student", "crud"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

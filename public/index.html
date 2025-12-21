@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Notes & Reminders</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Student Notes & Reminders</h1>
+            <p class="subtitle">Organize your academic and personal life</p>
+        </header>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="addNoteBtn">+ Add New Note</button>
+            <div class="filter-group">
+                <label for="categoryFilter">Filter by Category:</label>
+                <select id="categoryFilter">
+                    <option value="all">All Categories</option>
+                    <option value="School">School</option>
+                    <option value="Personal">Personal</option>
+                    <option value="Work">Work</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="notes-grid" id="notesGrid">
+            <!-- Notes will be dynamically inserted here -->
+        </div>
+
+        <div class="empty-state" id="emptyState">
+            <p>No notes yet. Click "Add New Note" to get started!</p>
+        </div>
+    </div>
+
+    <!-- Modal for Add/Edit Note -->
+    <div class="modal" id="noteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Note</h2>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            <form id="noteForm">
+                <input type="hidden" id="noteId">
+                
+                <div class="form-group">
+                    <label for="noteTitle">Title *</label>
+                    <input type="text" id="noteTitle" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="noteContent">Content *</label>
+                    <textarea id="noteContent" rows="5" required></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="noteCategory">Category</label>
+                        <select id="noteCategory">
+                            <option value="Personal">Personal</option>
+                            <option value="School">School</option>
+                            <option value="Work">Work</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="isReminder">
+                            <span>Set as Reminder</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="reminderDateGroup" style="display: none;">
+                    <label for="reminderDate">Reminder Date & Time</label>
+                    <input type="datetime-local" id="reminderDate">
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Note</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
