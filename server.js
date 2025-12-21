@@ -4,7 +4,7 @@ const fs = require('fs').promises;
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data', 'notes.json');
 
 // Middleware
@@ -47,6 +47,7 @@ async function writeNotes(notes) {
     return true;
   } catch (error) {
     console.error('Error writing notes:', error);
+    console.error('Error details:', error.message, error.stack);
     return false;
   }
 }
@@ -103,7 +104,8 @@ app.post('/api/notes', async (req, res) => {
     await writeNotes(notes);
     res.status(201).json(newNote);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create note' });
+    console.error('Error creating note:', error);
+    res.status(500).json({ error: 'Failed to create note', details: error.message });
   }
 });
 
@@ -156,10 +158,15 @@ app.delete('/api/notes/:id', async (req, res) => {
 
 // Initialize server
 async function startServer() {
-  await ensureDataDir();
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  try {
+    await ensureDataDir();
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
 }
 
 startServer();

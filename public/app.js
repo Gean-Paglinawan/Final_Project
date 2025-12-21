@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:3000/api';
+// Use relative URL for API calls (works for both local and deployed)
+const API_BASE_URL = '/api';
 
 // DOM Elements
 const notesGrid = document.getElementById('notesGrid');
@@ -73,7 +74,10 @@ async function createNote(noteData) {
             body: JSON.stringify(noteData)
         });
         
-        if (!response.ok) throw new Error('Failed to create note');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || errorData.details || `HTTP ${response.status}: Failed to create note`);
+        }
         const newNote = await response.json();
         notes.push(newNote);
         renderNotes();
@@ -81,7 +85,7 @@ async function createNote(noteData) {
         return newNote;
     } catch (error) {
         console.error('Error creating note:', error);
-        showNotification('Failed to create note. Please try again.', 'error');
+        showNotification(`Failed to create note: ${error.message}`, 'error');
         throw error;
     }
 }
