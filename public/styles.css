@@ -109,8 +109,10 @@ header h1 {
 .btn-danger {
     background: #dc3545;
     color: white;
-    padding: 8px 16px;
+    padding: 8px 14px;
     font-size: 14px;
+    min-width: 70px;
+    flex: 0 1 auto;
 }
 
 .btn-danger:hover {
@@ -120,8 +122,10 @@ header h1 {
 .btn-success {
     background: #28a745;
     color: white;
-    padding: 8px 16px;
+    padding: 8px 14px;
     font-size: 14px;
+    min-width: 120px;
+    flex: 0 1 auto;
 }
 
 .btn-success:hover {
@@ -131,8 +135,10 @@ header h1 {
 .btn-complete {
     background: #17a2b8;
     color: white;
-    padding: 8px 16px;
+    padding: 8px 14px;
     font-size: 14px;
+    min-width: 120px;
+    flex: 0 1 auto;
 }
 
 .btn-complete:hover {
@@ -142,9 +148,11 @@ header h1 {
 .btn-completed {
     background: #28a745;
     color: white;
-    padding: 8px 16px;
+    padding: 8px 14px;
     font-size: 14px;
     cursor: default;
+    min-width: 120px;
+    flex: 0 1 auto;
 }
 
 .btn-completed:hover {
@@ -154,8 +162,10 @@ header h1 {
 .btn-edit {
     background: #ffc107;
     color: #333;
-    padding: 8px 16px;
+    padding: 8px 14px;
     font-size: 14px;
+    min-width: 70px;
+    flex: 0 1 auto;
 }
 
 .btn-edit:hover {
@@ -203,14 +213,20 @@ header h1 {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+}
+
+.note-header > div {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 }
 
 .note-title {
     font-size: 1.3em;
     font-weight: 600;
     color: #333;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     flex: 1;
 }
 
@@ -222,7 +238,8 @@ header h1 {
     border-radius: 20px;
     font-size: 0.75em;
     font-weight: 600;
-    margin-left: 10px;
+    width: fit-content;
+    margin-bottom: 0;
 }
 
 .note-content {
@@ -230,28 +247,34 @@ header h1 {
     line-height: 1.6;
     margin-bottom: 15px;
     white-space: pre-wrap;
+    margin-top: 8px;
 }
 
 .note-meta {
     font-size: 0.85em;
     color: #999;
-    margin-bottom: 15px;
+    margin-bottom: 18px;
+    margin-top: 5px;
 }
 
 .note-reminder {
     background: #fff3cd;
-    padding: 8px;
+    padding: 12px 14px;
     border-radius: 5px;
-    margin-bottom: 15px;
+    margin-bottom: 18px;
+    margin-top: 5px;
     font-size: 0.9em;
     color: #856404;
     border-left: 3px solid #ffc107;
+    line-height: 1.5;
 }
 
 .note-actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
 }
 
 .empty-state {
