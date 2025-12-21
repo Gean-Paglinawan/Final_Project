@@ -379,6 +379,7 @@ form {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 15px;
+    align-items: end;
 }
 
 .form-group label {
@@ -386,6 +387,10 @@ form {
     margin-bottom: 8px;
     font-weight: 600;
     color: #555;
+}
+
+.form-group > .checkbox-label {
+    margin-bottom: 0;
 }
 
 .form-group input[type="text"],
@@ -413,13 +418,24 @@ form {
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    margin-top: 25px;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
 }
 
 .checkbox-label input[type="checkbox"] {
     width: 18px;
     height: 18px;
     cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+.checkbox-label span {
+    line-height: 1.5;
+    display: inline-flex;
+    align-items: center;
 }
 
 .form-actions {
