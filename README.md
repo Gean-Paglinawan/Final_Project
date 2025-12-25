@@ -77,7 +77,3 @@ Notes are stored in `data/notes.json`. The file is automatically created on firs
 ## Browser Notifications
 
 The app will request permission to show browser notifications for reminders. Notifications appear when a reminder time is reached.
-
-## License
-
-ISC
