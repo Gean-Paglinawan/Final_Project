@@ -10,7 +10,13 @@ const DATA_FILE = path.join(__dirname, 'data', 'notes.json');
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+
+// Serve static files from public directory
+// This ensures the app works the same way on localhost and Render
+app.use(express.static('public', {
+  index: 'index.html',
+  extensions: ['html', 'htm']
+}));
 
 // Ensure data directory exists
 async function ensureDataDir() {
@@ -107,6 +113,11 @@ async function writeNotes(notes) {
     return false;
   }
 }
+
+// Health check endpoint (useful for Render deployment)
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // API Routes
 

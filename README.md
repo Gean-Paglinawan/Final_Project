@@ -20,6 +20,8 @@ A simple CRUD application for students to manage notes and reminders with catego
 
 ## Installation
 
+### Local Development
+
 1. Install dependencies:
 ```bash
 npm install
@@ -34,6 +36,22 @@ npm start
 ```
 http://localhost:3000
 ```
+
+### Deployment to Render.com
+
+The app is configured to work on both localhost and Render automatically:
+
+1. Push your code to GitHub
+2. Connect your GitHub repository to Render
+3. Create a new **Web Service** on Render
+4. Render will automatically detect it's a Node.js app
+5. Use these settings:
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+   - **Environment**: Node
+6. The app will be available at your Render URL
+
+The app automatically adapts to the environment - no configuration changes needed!
 
 ## API Endpoints
 

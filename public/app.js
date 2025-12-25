@@ -1,4 +1,6 @@
-// Use relative URL for API calls (works for both local and deployed)
+// API Base URL - uses relative path which works for both localhost and deployed
+// When served by Express, static files and API are on the same origin
+// This works automatically on both localhost:3000 and Render.com deployments
 const API_BASE_URL = '/api';
 
 // DOM Elements
